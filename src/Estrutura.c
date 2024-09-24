@@ -1,69 +1,5 @@
-//bibliotecas
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-
-//declarações
-#define TAM 500
-#define TAMANHO_X 1024
-#define TAMANHO_Y 100
-#define MAX_ID_ASSUNTOS 100 // Capacidade máxima para armazenar id_assuntos
-int lidos = 0;
-
-typedef struct {
-    int ano;
-    int mes;
-    int dia;
-    int hora;
-    int minuto;
-    int segundo;
-    int milissegundos;
-} datajuizamento;
-
-typedef struct {
-    int indice;
-    char id[50];
-    double numero;
-    datajuizamento data_ajuizamento;
-    char id_classe[50];
-    char id_assunto[50];
-    char ano_eleicao[10];
-} Registro;
-Registro registros[TAMANHO_X];
-
-typedef struct{   // struct criada apenas para ler o cabeçalho
-    char id[TAMANHO_Y];
-    char numero[TAMANHO_Y];
-    char data_ajuizamento[TAMANHO_Y];
-    char id_classe[TAMANHO_Y];
-    char id_assunto[TAMANHO_Y];
-    char ano_eleicao[TAMANHO_Y];
-}cabecalho;
-cabecalho header[1];
-
-typedef struct { // struct criada apenas para contagem de classes 
-    char id_classe[50];
-    int quantidade;
-} ClasseContagem;
-
-//portótipos de funções
-datajuizamento OrganizadorData(const char *datastr);
-void ler_cabecalho(FILE *arquivo);
-void lerCSV(FILE *arquivo);
-void ordenacao_crescente_Id();
-void decrescente_data_ajuizamento();
-void contarIdClasse(int lidos);
-int idAssuntoUnico(char id_assunto[][50], int count, const char *new_id);
-void mostrar_um_registro();
-void mostrar_todos_registros();
-
-
-//funções de limpeza e manuntenção
-void remove_newline(char *str); //  remove o "\n" pelo fgets
-void remove_aspas(char *str); //remove o ""
-void clean_buffer(); // limpa o buffer do teclado
+#include "biblioteca.h"
 void remove_newline(char *str)
 {
     int i=0;
@@ -113,63 +49,7 @@ void processar_chaves(char **token) {
 
 
 //funções
-int main()
-{
-    int opcao;
-    FILE *arquivo = fopen("../Amostra.csv", "r"); 
 
-    if (arquivo == NULL) {
-        printf("Erro ao abrir o arquivo.\n");
-        perror("Detalhes do erro: ");
-        return 1;
-    }
-
-    ler_cabecalho(arquivo);
-    lerCSV(arquivo);
-
-    do
-    {
-        printf("\n\nEscolha uma das opções:\n1- Ordenação crescente de acordo com o atributo 'id'\n2- Ordenação decrescente de acordo com o atributo 'Data_ajuizamento'\n3- Contagem de assuntos únicos\n4- Contagem de registros por 'id_classe'\n5- Sair\n");
-        scanf("%d", &opcao);
-
-        if(opcao <= 0 || opcao >= 6)
-        {
-            printf("Numero digitado inválido.\nTente novamente.");
-            sleep(1);
-            break;
-        }
-
-        switch(opcao)
-        {
-            case 1:
-            ordenacao_crescente_Id(arquivo);
-            break;
-
-            case 2:
-            decrescente_data_ajuizamento();
-            break;
-
-            case 3:
-            //idAssuntoUnico(char id_assunto[][50], int cont, const char *new_id);
-            break;
-
-            case 4: 
-            contarIdClasse(lidos);
-            break;
-
-            case 5:
-            printf("Até logo ;)\n\n");
-            sleep(1);
-            exit(1);
-            break;
-        }
-    }while(opcao != 5);
-
-    free(arquivo);
-    fclose(arquivo);
-    
-    return 0;
-}
   
 datajuizamento OrganizadorData(const char *dataStr) //ok
 {
