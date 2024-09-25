@@ -12,7 +12,7 @@
 #define TAMANHO_X 1024
 #define TAMANHO_Y 100
 #define MAX_ID_ASSUNTOS 100 // Capacidade máxima para armazenar id_assuntos
-int lidos = 0;
+
 
 typedef struct {
     int ano;
@@ -33,7 +33,6 @@ typedef struct {
     char id_assunto[50];
     char ano_eleicao[10];
 } Registro;
-Registro registros[TAMANHO_X];
 
 typedef struct{   // struct criada apenas para ler o cabeçalho
     char id[TAMANHO_Y];
@@ -43,12 +42,16 @@ typedef struct{   // struct criada apenas para ler o cabeçalho
     char id_assunto[TAMANHO_Y];
     char ano_eleicao[TAMANHO_Y];
 }cabecalho;
-cabecalho header[1];
 
 typedef struct { // struct criada apenas para contagem de classes 
     char id_classe[50];
     int quantidade;
 } ClasseContagem;
+
+// Declare variables as extern
+extern int lidos; 
+extern Registro registros[TAMANHO_X];
+extern cabecalho header[1]; 
 
 //portótipos de funções
 datajuizamento OrganizadorData(const char *datastr);
@@ -60,7 +63,6 @@ void contarIdClasse(int lidos);
 int idAssuntoUnico(char id_assunto[][50], int count, const char *new_id);
 void mostrar_um_registro();
 void mostrar_todos_registros();
-
 
 //funções de limpeza e manuntenção
 void remove_newline(char *str); //  remove o "\n" pelo fgets
