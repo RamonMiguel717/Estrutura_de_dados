@@ -1,10 +1,14 @@
-#include <stdio.h>
 #include "biblioteca.h"
+#include <stdio.h>
+#include <stdlib.h>
 
-int main()
-{
+int lidos = 0; // Define lidos here
+Registro registros[TAMANHO_X]; // Define registros here
+cabecalho header[1]; // Define header here
+
+int main() {
     int opcao;
-    FILE *arquivo = fopen("../Amostra.csv", "r"); 
+    FILE *arquivo = fopen("Amostra.csv", "r");
 
     if (arquivo == NULL) {
         printf("Erro ao abrir o arquivo.\n");
@@ -13,48 +17,51 @@ int main()
     }
 
     ler_cabecalho(arquivo);
-    lerCSV(arquivo);
+    //lerCSV(arquivo); // Move lerCSV() call inside the menu loop
 
-    do
-    {
-        printf("\n\nEscolha uma das opções:\n1- Ordenação crescente de acordo com o atributo 'id'\n2- Ordenação decrescente de acordo com o atributo 'Data_ajuizamento'\n3- Contagem de assuntos únicos\n4- Contagem de registros por 'id_classe'\n5- Sair\n");
+    do {
+        printf("\n\nEscolha uma das opções:\n");
+        printf("1- Mostrar todos os registros (mostrar_todos_registros)\n");
+        printf("2- Ordenar registros por data (decrescente_data_ajuizamento)\n");
+        printf("3- Mostrar quantidade de cada classe (contarOcorrenciasIdClasse)\n");
+        printf("4- Contar classes únicas (idAssustosUnicos)\n");
+        printf("5- Sair\n");
         scanf("%d", &opcao);
 
-        if(opcao <= 0 || opcao >= 6)
-        {
-            printf("Numero digitado inválido.\nTente novamente.");
-            sleep(1);
-            break;
+        if (opcao <= 0 || opcao >= 6) {
+            printf("Número digitado inválido.\nTente novamente.\n");
+            continue;
         }
 
-        switch(opcao)
-        {
+        switch (opcao) {
             case 1:
-            ordenacao_crescente_Id();
-            break;
+                mostrar_todos_registros();
+                break;
 
             case 2:
-            decrescente_data_ajuizamento();
-            break;
+                decrescente_data_ajuizamento();
+                break;
 
             case 3:
-            //idAssuntoUnico(char id_assunto[][50], int cont, const char *new_id);
-            break;
+                contarOcorrenciasIdClasse(lidos);
+                break;
 
             case 4: 
-            contarIdClasse(lidos);
-            break;
+                // Assuming idAssuntoUnico takes an array, count, and new ID
+                idAssuntoUnico(registros[TAMANHO_X].id_assunto, 0,); 
+                break;
 
             case 5:
-            printf("Até logo ;)\n\n");
-            sleep(1);
-            exit(1);
-            break;
+                printf("Até logo ;)\n\n");
+                sleep(1);
+                exit(1);
+                fclose(arquivo);
+                return 0;
         }
-    }while(opcao != 5);
+      lerCSV(arquivo);
+    } while (opcao != 5);
 
-    free(arquivo);
     fclose(arquivo);
-    
+
     return 0;
 }
