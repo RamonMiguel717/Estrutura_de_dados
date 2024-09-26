@@ -1,82 +1,166 @@
 #include "biblioteca.h"
 #include <stdio.h>
-void remove_newline(char *str)
-{
-    int i=0;
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h> // for boolean data type
 
-    while(str[i] != '\0')
-    {
-        if(str[i] == '\n')
-        {
-            str[i] = '\0';
-            break;
-        }
-        i++;
+// --- Function to Format Date ---
+char* formatarData(DataJuizamento data) {
+    // Allocate memory for formatted date string
+    char* dataFormatada = malloc(sizeof(char) * 25); 
+
+    if (dataFormatada != NULL) {
+        sprintf(dataFormatada, "%04d-%02d-%02d %02d:%02d:%02d.%03d", 
+                data.ano, data.mes, data.dia, 
+                data.hora, data.minuto, data.segundo, data.milissegundos);
+    } else {
+        perror("Erro ao alocar memória para data formatada");
+        exit(EXIT_FAILURE); // Terminate the program if memory allocation fails
     }
-}
-void clean_buffer()
-{
-    int clean;
 
-    while((clean = getchar()) != '\n' && clean != EOF);
+    return dataFormatada;
 }
-void remove_aspas(char *str) 
-{
-    char *dest = str;
-    char *src = str;
 
-    while (*src) {
-        if (*src != '"') {
-            *dest++ = *src;
-        }
-        src++;
+// --- Function to Compare Dates ---
+int compararDatas(DataJuizamento data1, DataJuizamento data2) {
+    // Compare years
+    if (data1.ano < data2.ano) {
+        return -1;
+    } else if (data1.ano > data2.ano) {
+        return 1;
     }
-    *dest = '\0';
-}
-void processar_chaves(char **token); //tratar atributos que comtem "{}"
-void processar_chaves(char **token) {
-    if (*token != NULL && (*token)[0] == '{') {
-        char *inicio = *token;
-        while (strchr(inicio, '}') == NULL) {
-            char *proximo = strtok(NULL, ",");
-            if (proximo != NULL) {
-                strcat(inicio, ",");
-                strcat(inicio, proximo);
-            }
-        }
+
+    // Years are equal, compare months
+    if (data1.mes < data2.mes) {
+        return -1;
+    } else if (data1.mes > data2.mes) {
+        return 1;
     }
+
+    // Months are equal, compare days
+    if (data1.dia < data2.dia) {
+        return -1;
+    } else if (data1.dia > data2.dia) {
+        return 1;
+    }
+
+    // Days are equal, compare hours
+    // ... continue comparing other fields (hours, minutes, seconds, milliseconds)
+
+    // Dates are equal
+    return 0;
 }
 
-
-//funções
-
-
-datajuizamento OrganizadorData(const char *dataStr) //ok
-{
-    datajuizamento data;
-
-    sscanf(dataStr, "%d-%d-%d %d:%d:%d.%d",&data.ano, &data.mes, &data.dia,&data.hora, &data.minuto, &data.segundo, &data.milissegundos);
+// --- Function to Parse a Date String ---
+DataJuizamento organizarData(const char *dataStr) {
+    DataJuizamento data;
+    sscanf(dataStr, "%d-%d-%d %d:%d:%d.%d", 
+           &data.ano, &data.mes, &data.dia, 
+           &data.hora, &data.minuto, &data.segundo, &data.milissegundos);
     return data;
 }
 
-void ler_cabecalho(FILE *arquivo) //ok
-{
+// --- Function to Compare Records (for sorting) ---
+int compararRegistros(Registro registro1, Registro registro2) {
+    return compararDatas(registro1.data_ajuizamento, registro2.data_ajuizamento);
+}
+
+// --- Function to Sort Records by DataJuizamento (using Quicksort) ---
+void quicksortRegistros(Registro registros[], int inicio, int fim) {
+    if (inicio < fim) {
+        int pivo = inicio;
+        int i = inicio + 1;
+        int j = fim;
+
+        while (i <= j) {
+            while (i <= fim && compararRegistros(registros[i], registros[pivo]) <= 0) {
+                i++;
+            }
+
+            while (j >= inicio && compararRegistros(registros[j], registros[pivo]) > 0) {
+                j--;
+            }
+
+            if (i < j) {
+                Registro temp = registros[i];
+                registros[i] = registros[j];
+                registros[j] = temp;
+            }
+        }
+
+        Registro temp = registros[pivo];
+        registros[pivo] = registros[j];
+        registros[j] = temp;
+
+        quicksortRegistros(registros, inicio, j - 1);
+        quicksortRegistros(registros, j + 1, fim);
+    }
+}
+
+void decrescente_data_ajuizamento() {
+    int opcao;
+    quicksortRegistros(registros, 0, lidos - 1); // Assuming `lidos` is the number of valid records
+
+    printf("Registros ordenados por data:\n");
+    mostrar_todos_registros(); // You can re-use mostrar_todos_registros to print the sorted data
+
+    printf("\n1-Mostra todos os registros ordenados\n2- Mostrar um registro específico\n3- Voltar\n\n");
+    scanf("%d", &opcao);
+
+    switch (opcao) {
+        case 1:
+            mostrar_todos_registros();
+            break;
+
+        case 2:
+            mostrar_um_registro();
+            break;
+
+        case 3:
+            return;
+    }
+}
+
+int contarOcorrenciasIdClasse(int lidos) {
+    ClasseContagem contagens[TAMANHO_Y];
+        int totalClasses = 0;
+
+        for (int i = 0; i < lidos; i++) {
+            int encontrado = 0;
+            for (int j = 0; j < totalClasses; j++) {
+                if (strcmp(contagens[j].id_classe, registros[i].id_classe) == 0) {
+                    contagens[j].quantidade++;
+                    encontrado = 1;
+                    break;
+                }
+            }
+            if (!encontrado) {
+                strcpy(contagens[totalClasses].id_classe, registros[i].id_classe);
+                contagens[totalClasses].quantidade = 1;
+                totalClasses++;
+            }
+        }
+
+        for (int i = 0; i < totalClasses; i++) {
+            printf("Número de processos vinculados ao id_classe '%s': %d\n", contagens[i].id_classe, contagens[i].quantidade);
+        }
+        return totalClasses;}    
+
+void ler_cabecalho(FILE *arquivo) {
     char linha[TAM];
 
     printf("\n*Abertura bem sucedida!!\n");
     printf("lendo cabeçalho...");
     sleep(1);
 
-    if(fgets(linha, sizeof(linha), arquivo))
-    {
+    if (fgets(linha, sizeof(linha), arquivo)) {
         remove_newline(linha);
         remove_aspas(linha);
 
         char *token = strtok(linha, ",");
         int contagem = 0;
 
-        while(token != NULL && contagem < 6)
-        {
+        while (token != NULL && contagem < 6) {
             // Remove aspas do início e do final do token, se presentes
             if (token[0] == '"') token++;
             if (token[strlen(token) - 1] == '"') token[strlen(token) - 1] = '\0';
@@ -96,20 +180,14 @@ void ler_cabecalho(FILE *arquivo) //ok
             contagem++;
         }
 
-        //printf("\n\nCabeçalho lido:\n"); //confirmação de leitura do cabeçalho
-        //for(int i=0;i<1;i++)
-        //{
-           // printf("id: %s\nnumero: %s\nData-ajuizamento: %s\nId-classe: %s\nId-assunto: %s\nAno eleição: %s\n\n", header[i].id, header[i].numero, header[i].data_ajuizamento, header[i].id_classe, header[i].id_assunto, header[i].ano_eleicao);
-        //}
     }
 }
 
-void lerCSV(FILE *arquivo) //ok
-{
+void lerCSV(FILE *arquivo) {
     char linha[TAM];
     int indice = 0;
 
-    printf("Lendo arquivo...\n"); //confirmação de leitura
+    printf("Lendo arquivo...\n"); 
     sleep(1);
 
     while (fgets(linha, sizeof(linha), arquivo)) {
@@ -122,11 +200,11 @@ void lerCSV(FILE *arquivo) //ok
 
         token = strtok(NULL, ",");
         if (token != NULL) {
-            registro.numero = strtod(token, NULL); // Convertendo o token para double e armazenando no campo numero
+            registro.numero = strtod(token, NULL);
         }
 
         token = strtok(NULL, ",");
-        if (token != NULL) registro.data_ajuizamento = OrganizadorData(token);
+        if (token != NULL) registro.data_ajuizamento = organizarData(token);
 
         token = strtok(NULL, ",");
         if (token != NULL) strcpy(registro.id_classe, token);
@@ -147,13 +225,10 @@ void lerCSV(FILE *arquivo) //ok
 
     printf("\n*Arquivo 'amostra.csv' armazenado com sucesso!!\n\n");
 
-    // confirmação de armazenamento dos registros
     printf("Quantidade de arquivos lidos: \n%d\n\n", lidos);
 }
 
-
-void ordenacao_crescente_Id() //ok
-{
+void ordenacao_crescente_Id() {
     Registro temp;
     int opcao;
 
@@ -197,115 +272,7 @@ void ordenacao_crescente_Id() //ok
 
 }
 
-void decrescente_data_ajuizamento() //ok
-{
-    Registro temp;
-    int opcao;
-
-    for (int i = 0; i < TAMANHO_X - 1; i++) 
-    {
-        for (int j = 0; j < TAMANHO_X - 1 - i; j++) 
-        {
-
-            // Comparar anos
-            if (registros[j].data_ajuizamento.ano < registros[j+1].data_ajuizamento.ano) 
-            {
-                temp = registros[j];
-                registros[j] = registros[j + 1];
-                registros[j + 1] = temp;
-            }
-
-            // Se os anos forem iguais, comparar meses
-            else if (registros[j].data_ajuizamento.ano == registros[j+1].data_ajuizamento.ano) 
-            {
-                if (registros[j].data_ajuizamento.mes < registros[j+1].data_ajuizamento.mes) 
-                {
-                    temp = registros[j];
-                    registros[j] = registros[j + 1];
-                    registros[j + 1] = temp;
-                }
-                // Se os meses forem iguais, comparar dias
-                else if (registros[j].data_ajuizamento.mes == registros[j+1].data_ajuizamento.mes) 
-                {
-                    if (registros[j].data_ajuizamento.dia < registros[j+1].data_ajuizamento.dia) 
-                    {
-                        temp = registros[j];
-                        registros[j] = registros[j + 1];
-                        registros[j + 1] = temp;
-                    }
-                    // Se os dias forem iguais, comparar horas
-                    else if (registros[j].data_ajuizamento.dia == registros[j+1].data_ajuizamento.dia) 
-                    {
-                        if (registros[j].data_ajuizamento.hora < registros[j+1].data_ajuizamento.hora) 
-                        {
-                            temp = registros[j];
-                            registros[j] = registros[j + 1];
-                            registros[j + 1] = temp;
-                        }
-                        // Se as horas forem iguais, comparar minutos
-                        else if (registros[j].data_ajuizamento.hora == registros[j+1].data_ajuizamento.hora) 
-                        {
-                            if (registros[j].data_ajuizamento.minuto < registros[j+1].data_ajuizamento.minuto) 
-                            {
-                                temp = registros[j];
-                                registros[j] = registros[j + 1];
-                                registros[j + 1] = temp;
-                            }
-                            // Se os minutos forem iguais, comparar segundos
-                            else if (registros[j].data_ajuizamento.minuto == registros[j+1].data_ajuizamento.minuto) 
-                            {
-                                if (registros[j].data_ajuizamento.segundo < registros[j+1].data_ajuizamento.segundo) 
-                                {
-                                    temp = registros[j];
-                                    registros[j] = registros[j + 1];
-                                    registros[j + 1] = temp;
-                                }
-                                // Se os segundos forem iguais, comparar milissegundos
-                                else if (registros[j].data_ajuizamento.segundo == registros[j+1].data_ajuizamento.segundo) 
-                                {
-                                    if (registros[j].data_ajuizamento.milissegundos < registros[j+1].data_ajuizamento.milissegundos) 
-                                    {
-                                        temp = registros[j];
-                                        registros[j] = registros[j + 1];
-                                        registros[j + 1] = temp;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        //printf("Processo ordenado! Número: %d\nId: %s\nNúmero: %lf\n Data ajuizamento: %d-%02d-%02d %02d:%02d:%02d.%03d\nId-classe: %s\nId-assunto: %s\nAno-eleição: %s\n\n", i+1, registros[i].id, registros[i].numero, registros[i].data_ajuizamento.ano,
-                    //registros[i].data_ajuizamento.mes,
-                    //registros[i].data_ajuizamento.dia,
-                    //registros[i].data_ajuizamento.hora,
-                    //registros[i].data_ajuizamento.minuto,
-                    //registros[i].data_ajuizamento.segundo,
-                    //registros[i].data_ajuizamento.milissegundos, registros[i].id_classe, registros[i].id_assunto, registros[i].ano_eleicao);
-    }
-    printf("Ordenação bem sucedida!\n");
-
-    printf("\n1-Mostra todos os registros ordenados\n2- Mostrar um registro específico\n3- Voltar\n\n");
-    scanf("%d", &opcao);
-
-    switch(opcao)
-    {
-        case 1:
-        mostrar_todos_registros();
-        break;
-
-        case 2:
-        mostrar_um_registro();
-        break;
-
-        case 3:
-        return;
-    }
-}
-
-void mostrar_todos_registros() //ok
-{
+void mostrar_todos_registros() {
     char resp[10];
 
     printf("Deseja ver a ordenação de todos os registros?\n");
@@ -313,31 +280,28 @@ void mostrar_todos_registros() //ok
     fgets(resp, sizeof(resp), stdin);
     remove_newline(resp);
 
-    if(strcmp(resp, "sim") == 0 || strcmp(resp, "Sim") == 0)
-    {
-            if(lidos > 0)
-            {
-                for(int i=0;i < TAMANHO_X ;i++)
-                {
-                    printf("Processo número: %d\nId: %s\nNúmero: %lf\n Data ajuizamento: %d-%02d-%02d %02d:%02d:%02d.%03d\nId-classe: %s\nId-assunto: %s\nAno-eleição: %s\n\n", i+1, registros[i].id, registros[i].numero, registros[i].data_ajuizamento.ano,
+    if (strcmp(resp, "sim") == 0 || strcmp(resp, "Sim") == 0) {
+        if (lidos > 0) {
+            for (int i = 0; i < TAMANHO_X; i++) {
+                printf("Processo número: %d\nId: %s\nNúmero: %lf\n Data ajuizamento: %d-%02d-%02d %02d:%02d:%02d.%03d\nId-classe: %s\nId-assunto: %s\nAno-eleição: %s\n\n", i + 1, registros[i].id, registros[i].numero, registros[i].data_ajuizamento.ano,
                     registros[i].data_ajuizamento.mes,
                     registros[i].data_ajuizamento.dia,
                     registros[i].data_ajuizamento.hora,
                     registros[i].data_ajuizamento.minuto,
                     registros[i].data_ajuizamento.segundo,
                     registros[i].data_ajuizamento.milissegundos, registros[i].id_classe, registros[i].id_assunto, registros[i].ano_eleicao);
-                }   
-                printf("Voltando ao menu...");
-                    sleep(1);
-                    return;   
-            }
-            else
-            {
-                printf("Ainda não existem processos.\n ");
-                printf("Voltando ao menu...");
+            }   
+            printf("Voltando ao menu...");
                 sleep(1);
-                return;
-            } 
+                return;   
+        }
+        else
+        {
+            printf("Ainda não existem processos.\n ");
+            printf("Voltando ao menu...");
+            sleep(1);
+            return;
+        } 
     }    
     else
     {
@@ -347,8 +311,7 @@ void mostrar_todos_registros() //ok
     }
 }
 
-void mostrar_um_registro() //ok
-{
+void mostrar_um_registro() {
     char id_processo[TAMANHO_Y], resp[10];
 
     printf("Deseja ver a ordenação de um único registro do arquivo?\n");
@@ -399,36 +362,62 @@ void mostrar_um_registro() //ok
     }
 }
 
-int idAssuntoUnico(char id_assunto[][50], int count, const char *new_id) {
-    for (int i = 0; i < count; i++) {
-        if (strcmp(id_assunto[i], new_id) == 0) {
-            return 0; // ID já existe
-        }
-    }
-    return 1; // Novo ID
-}
+int idAssuntoUnico(char (*id_assunto)[50], int count, const char *new_id) {
+    int numeroDeProcessos;
 
-void contarIdClasse( int lidos){ //ok
-    ClasseContagem contagens[TAMANHO_Y];
-    int totalClasses = 0;
-
-    for (int i = 0; i < lidos; i++) {
-        int encontrado = 0;
-        for (int j = 0; j < totalClasses; j++) {
-            if (strcmp(contagens[j].id_classe, registros[i].id_classe) == 0) {
-                contagens[j].quantidade++;
-                encontrado = 1;
+    // Iterate through records
+    for (int i = 0; i < numeroDeProcessos; i++) {
+        int found = 0;
+        for (int j = 0; j < count; j++) {
+            if (strcmp(id_assunto[j], registros[i].id_assunto) == 0) {
+                found = 1;
                 break;
             }
         }
-        if (!encontrado) {
-            strcpy(contagens[totalClasses].id_classe, registros[i].id_classe);
-            contagens[totalClasses].quantidade = 1;
-            totalClasses++;
+        if (!found) {
+            strcpy(id_assunto[count], registros[i].id_assunto);
+            count++;
         }
     }
 
-    for (int i = 0; i < totalClasses; i++) {
-        printf("Número de processos vinculados ao id_classe '%s': %d\n", contagens[i].id_classe, contagens[i].quantidade);
+    // Print the counts (you can modify this to get the counts for each class)
+    for (int i = 0; i < count; i++) {
+        printf("Id_assunto único: %s\n", id_assunto[i]);
     }
+
+    return count; // Return the count of unique id_assunto
+}
+
+void remove_newline(char *str)
+{
+    int i=0;
+
+    while(str[i] != '\0')
+    {
+        if(str[i] == '\n')
+        {
+            str[i] = '\0';
+            break;
+        }
+        i++;
+    }
+}
+void clean_buffer()
+{
+    int clean;
+
+    while((clean = getchar()) != '\n' && clean != EOF);
+}
+void remove_aspas(char *str) 
+{
+    char *dest = str;
+    char *src = str;
+
+    while (*src) {
+        if (*src != '"') {
+            *dest++ = *src;
+        }
+        src++;
+    }
+    *dest = '\0';
 }
